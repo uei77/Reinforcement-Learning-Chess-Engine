@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+    <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-width=1.0">
+            <title>bilmem</title>
+            <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+            <style>
+                :root {
+                    --bg-color: #1e1e1e;
+                    --panel-bg: #2d2d2d;
+                    --text-color: #f0f0f0;
+                    --accent-color: #4CAF50;
+                    --error-color: #f44336;
+                }
+                body {
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    background-color: var(--bg-color);
+                    color: var(--text-color);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    min-height: 100vh;
+                    margin: 0;
+                }
+                .container {
+            display: flex;
+            gap: 30px;
+            background-color: var(--panel-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            max-width: 900px;
+            width: 100%;
+        }
+        .board-wrapper {
+            width: 450px;
+        }
+        .info-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        h1 {
+            margin-top: 0;
+            font-size: 1.8rem;
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 10px;
+        }
+        .status-box {
+            background-color: #1a1a1a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-align: center;
+            min-height: 28px;
+        }
+        .thinking {
+            color: #ffb74d;
+            animation: pulse 1.5s infinite;
+        }
+        .error { color: var(--error-color); }
+        .success { color: var(--accent-color); }
+        .btn-reset {
+            margin-top: auto;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-weight: bold;
+        }
+        .btn-reset:hover {
+            background-color: #45a049;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+        @media (max-width: 800px) {
+            .container { flex-direction: column; align-items: center; }
+            .board-wrapper { width: 100%; max-width: 450px; }
+            .info-panel { width: 100%; max-width: 450px; }
+        }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+        <div class="board-wrapper">
+            <div id="board"></div>
+        </div>
+
+        <div class="info-panel">
+            <h1>AlphaZero-Style Engine</h1>
+            <p>Playing against a PyTorch Deep Learning model utilizing Monte Carlo Tree Search.</p>
+            
+            <div id="status" class="status-box success">White to move</div>
+            
+            <button class="btn-reset" onclick="resetGame()">New Game</button>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+
+    <script>
+        let board = null;
+        let game = new Chess();
+        const $status = $('#status');
+        let isEngineThinking = false; 
+        function onDragStart (source, piece, position, orientation) {
+            
+            if (game.game_over()) return false;
+            if (isEngineThinking) return false;
+            if (piece.search(/^b/) !== -1) return false;
+        }
+        function isPromotion(source, target) {
+            const moves = game.moves({ verbose: true });
+            for (let i = 0; i < moves.length; i++) {
+                if (moves[i].from === source && moves[i].to === target && moves[i].promotion) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        function onDrop (source, target) {
+            let promoPiece = 'q'; 
+            if (isPromotion(source, target)) {
+                let userInput = prompt(
+                    "Pawn Promotion! Choose a piece:\nq (Queen)\nr (Rook)\nb (Bishop)\nn (Knight)", 
+                    "q"
+                );
+                if (userInput && ['q', 'r', 'b', 'n'].includes(userInput.toLowerCase())) {
+                    promoPiece = userInput.toLowerCase();
+                } else {
+                    return 'snapback'; 
+                }
+            }
+            let move = game.move({
+                from: source,
+                to: target,
+                promotion: promoPiece
+            });
+            if (move === null) return 'snapback';
+            updateStatus();
+            if (!game.game_over()) {
+                window.setTimeout(makeEngineMove, 250);
+            }
+        }
+        function onSnapEnd () {
+           
+            board.position(game.fen());
+        }
+        function updateStatus () {
+            let statusHTML = '';
+            let moveColor = game.turn() === 'w' ? 'White' : 'Black';
+
+            $status.removeClass('thinking error success');
+
+            if (game.in_checkmate()) {
+                statusHTML = `Game Over: ${moveColor} is in checkmate.`;
+            } else if (game.in_draw()) {
+                statusHTML = 'Game Over: Draw.';
+            } else {
+                statusHTML = `${moveColor} to move`;
+                if (game.in_check()) {
+                    statusHTML += ` (Check!)`;
+                }
+            }
+
+            if (!game.game_over() && moveColor === 'White') {
+                $status.addClass('success');
+            }
+
+            $status.html(statusHTML);
+        }
+        async function makeEngineMove() {
+            isEngineThinking = true;
+            $status.html("Engine is thinking...");
+            $status.removeClass('success error').addClass('thinking');
+
+            try {
+                
+                const response = await fetch('http://127.0.0.1:8000/api/v1/engine/move', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ fen: game.fen() })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const uciMove = data.best_move; 
+                if (!uciMove) throw new Error("Received empty move from engine");
+                const sourceSq = uciMove.substring(0, 2);
+                const targetSq = uciMove.substring(2, 4);
+                const promotionPiece = uciMove.length === 5 ? uciMove.substring(4, 5) : undefined;
+                game.move({
+                    from: sourceSq,
+                    to: targetSq,
+                    promotion: promotionPiece
+                });
+
+                board.position(game.fen());
+                isEngineThinking = false;
+                updateStatus();
+
+            } catch (error) {
+                console.error("Backend connection failed:", error);
+                isEngineThinking = false;
+                $status.removeClass('thinking success').addClass('error');
+                $status.html("Error: Cannot connect to engine backend.");
+                game.undo(); 
+                board.position(game.fen());
+            }
+        }
+        function resetGame() {
+            if (isEngineThinking) return; 
+            game.reset();
+            board.start();
+            updateStatus();
+        }
+        const config = {
+            draggable: true,
+            position: 'start',
+            onDragStart: onDragStart,
+            onDrop: onDrop,
+            onSnapEnd: onSnapEnd,
+            pieceTheme: 'https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/img/chesspieces/wikipedia/{piece}.png'
+        };
+        board = Chessboard('board', config);
+        updateStatus();
+        $(window).resize(board.resize);
+    </script>
+
+        </body>
+    </html>
