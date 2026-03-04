@@ -11,23 +11,27 @@ LEARNING_RATE = 0.001
 MODEL_NAME = "final_chess_dl_model.pt"
 
 def main():
+    
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Starting Supervised Training: {CSV_FILE} for {EPOCHS} epochs.")
+    print(f"Active Device: {device.type.upper()}")
+    
     model = chess_neural_network().to(device)
+    
     if os.path.exists(MODEL_NAME):
         print(f"Checkpoint found! Loading weights from {MODEL_NAME} to continue training...")
         try:
-            checkpoint = torch.load(MODEL_NAME, map_location=device)
+            checkpoint = torch.load(MODEL_NAME, map_location=device, weights_only=True)
             model.load_state_dict(checkpoint, strict=False)
             print("Model weights loaded successfully! Resuming training...")
-            
         except Exception as e:
             print(f"Error loading model: {e}. Starting from scratch.")
     else:
         print(f"No checkpoint found ({MODEL_NAME}). Starting training from scratch.")
+        
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=1e-4)
+    
     try:
-       
         train_loop(
             model=model,
             optimizer=optimizer,
