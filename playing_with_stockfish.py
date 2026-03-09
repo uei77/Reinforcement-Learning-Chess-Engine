@@ -8,15 +8,16 @@ import numpy as np
 import random
 from neural_network import chess_neural_network
 from move import Move
-from enginevsbot import play_move_with_book, prepare_data, train_with_playing_itself_buffer, get_game_result
+from train_with_playing_itself import play_move, prepare_data, train_with_playing_itself_buffer, get_game_result
 
 move_record = Move()
 STOCKFISH_CMD = "stockfish"
-TARGET_SKILL_LEVEL = 1
+TARGET_SKILL_LEVEL = 5
 GAMES_TO_PLAY = 10
-MCTS_SIMULATIONS = 400
-LEARNING_RATE = 0.002
-FINAL_MODEL_NAME = "final_chess_dl_model.pt"
+MCTS_SIMULATIONS = 800
+LEARNING_RATE = 0.001
+FINAL_MODEL_NAME = "final_chess_rl_model.pt"
+OPENING_BOOK_PATH = "Perfect2021.bin"
 
 def process_game_vs_stockfish(model, device, engine, game_idx, simulation):
     model.eval()
@@ -24,15 +25,15 @@ def process_game_vs_stockfish(model, device, engine, game_idx, simulation):
     game_history = []
     
     model_is_white = random.choice([True, False])
-    print(f"Game {game_idx+1} starts. DL Model is {'WHITE' if model_is_white else 'BLACK'}")
+    print(f"Game {game_idx+1} starts. RL Model is {'WHITE' if model_is_white else 'BLACK'}")
     
     with torch.no_grad():
-        while not board.is_game_over() and len(board.move_stack) < 150:
+        while not board.is_game_over() and len(board.move_stack) < 400:
             current_move_count = len(board.move_stack)
             
             if (board.turn == chess.WHITE and model_is_white) or (board.turn == chess.BLACK and not model_is_white):
                 with autocast(device_type=device.type, dtype=torch.float16):
-                    move, policy = play_move_with_book(board, model, device, simulation=simulation, move_count=current_move_count)
+                    move, policy = play_move(board, model, device, simulation=simulation, move_count=current_move_count, opening_book_path=OPENING_BOOK_PATH)
                 if move is None:
                     break
             else:

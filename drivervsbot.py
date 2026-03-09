@@ -6,9 +6,9 @@ from enginevsbot import manager_vs_bot
 
 ITERATIONS = 5        
 GAMES_PER_ITERATION = 5
-MCTS_SIMULATIONS = 400      
+MCTS_SIMULATIONS = 800    
 LEARNING_RATE = 0.001
-FINAL_MODEL_NAME = "final_chess_dl_model.pt"
+FINAL_MODEL_NAME = "final_chess_rl_model.pt"
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

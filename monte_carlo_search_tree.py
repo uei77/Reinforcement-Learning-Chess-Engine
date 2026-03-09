@@ -83,17 +83,20 @@ def run_simulation(root, board, model, device):
                 node.children[move.uci()] = MCTNode(game=None, move=move, parent=node, priority=prob)
     else:
         result = current_board.result()
-        if result == "1-0": value = 1.0
-        elif result == "0-1": value = -1.0
-        else: value = 0.0
+        if result == "1-0":
+            value = 1.0 if current_board.turn == chess.WHITE else -1.0
+        elif result == "0-1":
+            value = 1.0 if current_board.turn == chess.BLACK else -1.0
+        else:
+            value = 0.0
         
     backpropagate(search_path, value, current_board.turn)
 
 def backpropagate(path, value, turn_at_leaf):
     for node in reversed(path):
+        value = -value
         node.visit += 1
         node.value += value
-        value = -value 
 
 def monte_carlo_search_algorithm(board, model, device, numofsimulation=100, is_Train=True,move_count=0):
     root = MCTNode(game=None) 
@@ -134,7 +137,7 @@ def monte_carlo_search_algorithm(board, model, device, numofsimulation=100, is_T
         return chosen_move, final_policy
 
     if is_Train:
-        if move_count < 30:
+        if move_count < 60:
             prob_distribution = visits / visits.sum()
             chosen_move_uci = np.random.choice(moves, p=prob_distribution)
         else:

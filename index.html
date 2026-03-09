@@ -1,108 +1,256 @@
 <!DOCTYPE html>
-    <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-width=1.0">
-            <title>bilmem</title>
-            <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
-            <style>
-                :root {
-                    --bg-color: #1e1e1e;
-                    --panel-bg: #2d2d2d;
-                    --text-color: #f0f0f0;
-                    --accent-color: #4CAF50;
-                    --error-color: #f44336;
-                }
-                body {
-                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                    background-color: var(--bg-color);
-                    color: var(--text-color);
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    min-height: 100vh;
-                    margin: 0;
-                }
-                .container {
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1900–2000 ELO Chess Engine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:        #0d0f14;
+            --surface:   #161b27;
+            --surface2:  #1e2536;
+            --border:    #2a3350;
+            --accent:    #4f8ef7;
+            --accent2:   #7c5cfc;
+            --success:   #22c55e;
+            --warning:   #f59e0b;
+            --error:     #ef4444;
+            --text:      #e2e8f0;
+            --muted:     #8892a4;
+            --radius:    12px;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        body {
             display: flex;
-            gap: 30px;
-            background-color: var(--panel-bg);
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            max-width: 900px;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 24px;
+            background:
+                radial-gradient(ellipse 80% 60% at 20% 20%, rgba(79,142,247,0.07) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 50% at 80% 80%, rgba(124,92,252,0.07) 0%, transparent 60%),
+                var(--bg);
+        }
+
+        .container {
+            display: flex;
+            gap: 28px;
+            align-items: flex-start;
             width: 100%;
+            max-width: 1040px;
         }
+
         .board-wrapper {
-            width: 450px;
+            flex: 0 0 auto;
         }
+
+        #board {
+            width: min(560px, calc(100vw - 320px - 80px));
+            min-width: 280px;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: 0 0 0 2px var(--border), 0 24px 60px rgba(0,0,0,0.6);
+        }
+
+        #board .board-b72b1 { border-radius: var(--radius); }
+
         .info-panel {
-            flex: 1;
+            flex: 1 1 280px;
+            min-width: 260px;
             display: flex;
             flex-direction: column;
+            gap: 16px;
         }
-        h1 {
-            margin-top: 0;
-            font-size: 1.8rem;
-            border-bottom: 2px solid var(--accent-color);
-            padding-bottom: 10px;
+
+        .info-panel h1 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
         }
+
         .status-box {
-            background-color: #1a1a1a;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 20px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            text-align: center;
-            min-height: 28px;
+            padding: 12px 16px;
+            border-radius: var(--radius);
+            font-weight: 600;
+            font-size: 0.95rem;
+            border: 1px solid transparent;
+            transition: all 0.25s;
+            line-height: 1.4;
         }
-        .thinking {
-            color: #ffb74d;
-            animation: pulse 1.5s infinite;
+        .status-box.success  { background: rgba(34,197,94,0.12);  border-color: rgba(34,197,94,0.3);  color: var(--success); }
+        .status-box.error    { background: rgba(239,68,68,0.12);   border-color: rgba(239,68,68,0.3);  color: var(--error); }
+        .status-box.thinking { background: rgba(79,142,247,0.12);  border-color: rgba(79,142,247,0.3); color: var(--accent); }
+        .status-box.thinking::after {
+            content: '';
+            display: inline-block;
+            width: 6px; height: 6px;
+            background: var(--accent);
+            border-radius: 50%;
+            margin-left: 8px;
+            animation: pulse 1s infinite;
+            vertical-align: middle;
         }
-        .error { color: var(--error-color); }
-        .success { color: var(--accent-color); }
-        .btn-reset {
-            margin-top: auto;
-            background-color: var(--accent-color);
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            font-size: 1rem;
-            border-radius: 6px;
+        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.7)} }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px 16px;
+        }
+        .card h3 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            margin-bottom: 10px;
+        }
+
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .slider-row label { font-size: 0.85rem; color: var(--muted); white-space: nowrap; }
+        .slider-row span  { font-weight: 700; color: var(--accent); min-width: 34px; text-align: right; font-size: 0.9rem; }
+        input[type=range] {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px; height: 16px;
+            background: var(--accent);
+            border-radius: 50%;
             cursor: pointer;
-            transition: background-color 0.3s;
-            font-weight: bold;
+            box-shadow: 0 0 0 3px rgba(79,142,247,0.25);
+            transition: box-shadow 0.2s;
         }
-        .btn-reset:hover {
-            background-color: #45a049;
+        input[type=range]::-webkit-slider-thumb:hover {
+            box-shadow: 0 0 0 6px rgba(79,142,247,0.25);
         }
-        @keyframes pulse {
-            0% { opacity: 0.6; }
-            50% { opacity: 1; }
-            100% { opacity: 0.6; }
+
+        #history {
+            max-height: 180px;
+            overflow-y: auto;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border) transparent;
         }
-        @media (max-width: 800px) {
+        .move-chip {
+            padding: 3px 8px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-family: 'Inter', monospace;
+            color: var(--text);
+        }
+        .move-chip.engine { border-color: rgba(79,142,247,0.5); color: var(--accent); }
+
+        .results-row {
+            display: flex;
+            gap: 8px;
+        }
+        .result-stat {
+            flex: 1;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px;
+            text-align: center;
+        }
+        .result-stat .val { font-size: 1.3rem; font-weight: 700; color: var(--text); }
+        .result-stat .lbl { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
+
+        .buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+
+        .btn {
+            flex: 1;
+            padding: 10px 14px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: 1px solid var(--border);
+            background: var(--surface2);
+            color: var(--text);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.18s;
+            white-space: nowrap;
+        }
+        .btn:hover:not(:disabled)  { background: var(--border); border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
+        .btn:active:not(:disabled) { transform: translateY(0); }
+        .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+        .btn.primary {
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            border-color: transparent;
+            color: #fff;
+        }
+        .btn.primary:hover:not(:disabled) { filter: brightness(1.15); color: #fff; }
+
+        @media (max-width: 700px) {
             .container { flex-direction: column; align-items: center; }
-            .board-wrapper { width: 100%; max-width: 450px; }
-            .info-panel { width: 100%; max-width: 450px; }
+            #board { width: min(96vw, 440px) !important; }
+            .info-panel { width: 100%; min-width: unset; }
         }
-            </style>
-        </head>
-        <body>
-            <div class="container">
+    </style>
+</head>
+<body>
+    <div class="container">
         <div class="board-wrapper">
             <div id="board"></div>
         </div>
 
         <div class="info-panel">
-            <h1>AlphaZero-Style Engine</h1>
-            <p>Playing against a PyTorch Deep Learning model utilizing Monte Carlo Tree Search.</p>
-            
+            <h1>1900 – 2000 ELO Chess Engine</h1>
+
             <div id="status" class="status-box success">White to move</div>
-            
-            <button class="btn-reset" onclick="resetGame()">New Game</button>
+
+            <div class="card">
+                <h3>Move History</h3>
+                <div id="history"></div>
+            </div>
+
+            <div class="card" id="resultsPanel" style="display:none">
+                <h3>Session Results</h3>
+                <div class="results-row">
+                    <div class="result-stat"><div class="val" id="statEngine">0</div><div class="lbl">Engine</div></div>
+                    <div class="result-stat"><div class="val" id="statPlayer">0</div><div class="lbl">Player</div></div>
+                    <div class="result-stat"><div class="val" id="statDraws">0</div><div class="lbl">Draws</div></div>
+                    <div class="result-stat"><div class="val" id="statTotal">0</div><div class="lbl">Total</div></div>
+                </div>
+            </div>
+
+            <div class="buttons">
+                <button class="btn" onclick="undoMove()" id="undoBtn" disabled>↩ Undo</button>
+                <button class="btn primary" onclick="resetGame()">New Game</button>
+                <button class="btn" onclick="showResults()">Results</button>
+            </div>
         </div>
     </div>
 
@@ -111,138 +259,193 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
 
     <script>
-        let board = null;
-        let game = new Chess();
-        const $status = $('#status');
-        let isEngineThinking = false; 
-        function onDragStart (source, piece, position, orientation) {
-            
-            if (game.game_over()) return false;
+        const API_BASE_URL = '';              
+        const API_KEY      = 'default_key_change_this'; 
+
+        let board          = null;
+        let game           = new Chess();
+        const $status      = $('#status');
+        const $history     = $('#history');
+        let isEngineThinking = false;
+        let currentGameId  = null;
+        let moveCount      = 0;
+
+        const NUM_SIMULATIONS = 800;
+
+        function updateStatus() {
+            $status.removeClass('success error thinking');
+            if (game.in_checkmate()) {
+                const winner = game.turn() === 'w' ? 'Black (Engine)' : 'White (You)';
+                $status.addClass('error').text(`Checkmate — ${winner} wins!`);
+            } else if (game.in_draw() || game.in_stalemate() || game.in_threefold_repetition()) {
+                $status.addClass('thinking').text('Draw');
+            } else if (game.in_check()) {
+                const side = game.turn() === 'w' ? 'White' : 'Black';
+                $status.addClass('error').text(`${side} is in check!`);
+            } else {
+                const side = game.turn() === 'w' ? '⬜ Your turn (White)' : '⬛ Engine thinking…';
+                $status.addClass('success').text(side);
+            }
+        }
+
+        function updateHistory(move, isEngine) {
+            moveCount++;
+            const chip = $('<span>').addClass('move-chip').text(`${moveCount}. ${move.san}`);
+            if (isEngine) chip.addClass('engine');
+            $history.append(chip);
+            $history.scrollTop($history[0].scrollHeight);
+            $('#undoBtn').prop('disabled', false);
+        }
+
+        function undoMove() {
+            if (isEngineThinking) return;
+            game.undo();
+            game.undo();
+            moveCount = Math.max(0, moveCount - 2);
+            board.position(game.fen());
+            $history.find('.move-chip').last().remove();
+            $history.find('.move-chip').last().remove();
+            if (game.history().length === 0) $('#undoBtn').prop('disabled', true);
+            updateStatus();
+        }
+
+        function onDrop(source, target) {
+            if (isEngineThinking) return 'snapback';
+
+            const move = game.move({ from: source, to: target, promotion: 'q' });
+            if (move === null) return 'snapback';
+
+            updateHistory(move, false);
+            updateStatus();
+
+            if (!game.game_over()) {
+                setTimeout(makeEngineMove, 120);
+            }
+        }
+
+        function onSnapEnd() { board.position(game.fen()); }
+        function onDragStart(source, piece) {
             if (isEngineThinking) return false;
+            if (game.game_over()) return false;
             if (piece.search(/^b/) !== -1) return false;
         }
-        function isPromotion(source, target) {
-            const moves = game.moves({ verbose: true });
-            for (let i = 0; i < moves.length; i++) {
-                if (moves[i].from === source && moves[i].to === target && moves[i].promotion) {
-                    return true;
-                }
-            }
-            return false;
-        }
-        function onDrop (source, target) {
-            let promoPiece = 'q'; 
-            if (isPromotion(source, target)) {
-                let userInput = prompt(
-                    "Pawn Promotion! Choose a piece:\nq (Queen)\nr (Rook)\nb (Bishop)\nn (Knight)", 
-                    "q"
-                );
-                if (userInput && ['q', 'r', 'b', 'n'].includes(userInput.toLowerCase())) {
-                    promoPiece = userInput.toLowerCase();
-                } else {
-                    return 'snapback'; 
-                }
-            }
-            let move = game.move({
-                from: source,
-                to: target,
-                promotion: promoPiece
-            });
-            if (move === null) return 'snapback';
-            updateStatus();
-            if (!game.game_over()) {
-                window.setTimeout(makeEngineMove, 250);
+
+        async function createNewGame() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/v1/game/create`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY }
+                });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                currentGameId = data.game_id;
+                console.log('New game:', currentGameId);
+            } catch (e) {
+                console.error('createNewGame failed:', e);
+                $status.removeClass('success thinking').addClass('error')
+                       .html('⚠ Backend Offline &mdash; run <code>python main.py</code> then refresh.');
             }
         }
-        function onSnapEnd () {
-           
-            board.position(game.fen());
-        }
-        function updateStatus () {
-            let statusHTML = '';
-            let moveColor = game.turn() === 'w' ? 'White' : 'Black';
 
-            $status.removeClass('thinking error success');
-
-            if (game.in_checkmate()) {
-                statusHTML = `Game Over: ${moveColor} is in checkmate.`;
-            } else if (game.in_draw()) {
-                statusHTML = 'Game Over: Draw.';
-            } else {
-                statusHTML = `${moveColor} to move`;
-                if (game.in_check()) {
-                    statusHTML += ` (Check!)`;
-                }
-            }
-
-            if (!game.game_over() && moveColor === 'White') {
-                $status.addClass('success');
-            }
-
-            $status.html(statusHTML);
-        }
         async function makeEngineMove() {
             isEngineThinking = true;
-            $status.html("Engine is thinking...");
-            $status.removeClass('success error').addClass('thinking');
+
+            let elapsed = 0;
+            const timer = setInterval(() => {
+                elapsed++;
+                $status.removeClass('success error').addClass('thinking')
+                       .text(`Engine is thinking… (${elapsed}s)`);
+            }, 1000);
+            $status.removeClass('success error').addClass('thinking').text('Engine is thinking… (0s)');
+
+            const controller = new AbortController();
+            const timeoutId  = setTimeout(() => controller.abort(), 5 * 60 * 1000);
 
             try {
-                
-                const response = await fetch('http://127.0.0.1:8000/api/v1/engine/move', {
+                const sims = NUM_SIMULATIONS;
+                const res  = await fetch(`${API_BASE_URL}/api/v1/engine/move`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ fen: game.fen() })
+                    headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY },
+                    body: JSON.stringify({ fen: game.fen(), game_id: currentGameId, num_simulations: sims }),
+                    signal: controller.signal
                 });
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                clearTimeout(timeoutId);
+                clearInterval(timer);
+
+                if (!res.ok) {
+                    if (res.status === 401) throw new Error('Invalid API key');
+                    throw new Error(`HTTP ${res.status}`);
                 }
 
-                const data = await response.json();
-                const uciMove = data.best_move; 
-                if (!uciMove) throw new Error("Received empty move from engine");
-                const sourceSq = uciMove.substring(0, 2);
-                const targetSq = uciMove.substring(2, 4);
-                const promotionPiece = uciMove.length === 5 ? uciMove.substring(4, 5) : undefined;
-                game.move({
-                    from: sourceSq,
-                    to: targetSq,
-                    promotion: promotionPiece
-                });
+                const data = await res.json();
+                if (data.game_over) {
+                    $status.removeClass('thinking').addClass('error').text(`Game Over: ${data.result}`);
+                    isEngineThinking = false;
+                    return;
+                }
 
+                const uci  = data.best_move;
+                if (!uci) throw new Error('Empty move');
+                const move = game.move({ from: uci.slice(0,2), to: uci.slice(2,4), promotion: uci[4] || 'q' });
+                if (move) updateHistory(move, true);
                 board.position(game.fen());
                 isEngineThinking = false;
                 updateStatus();
 
-            } catch (error) {
-                console.error("Backend connection failed:", error);
+            } catch (e) {
+                clearTimeout(timeoutId);
+                clearInterval(timer);
+                console.error('Engine error:', e);
                 isEngineThinking = false;
-                $status.removeClass('thinking success').addClass('error');
-                $status.html("Error: Cannot connect to engine backend.");
-                game.undo(); 
+                game.undo();
                 board.position(game.fen());
+                const msg = e.name === 'AbortError' ? 'Engine timed out (>5 min)' : `Engine error: ${e.message}`;
+                $status.removeClass('thinking success').addClass('error').text(msg);
             }
         }
-        function resetGame() {
-            if (isEngineThinking) return; 
+
+        async function showResults() {
+            try {
+                const res  = await fetch(`${API_BASE_URL}/api/v1/game/results`, {
+                    headers: { 'X-API-Key': API_KEY }
+                });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const d = await res.json();
+                $('#statEngine').text(d.engine_wins);
+                $('#statPlayer').text(d.player_wins);
+                $('#statDraws').text(d.draws);
+                $('#statTotal').text(d.total_games);
+                $('#resultsPanel').show();
+            } catch (e) {
+                console.error('Results error:', e);
+                $('#resultsPanel').show();
+            }
+        }
+
+        async function resetGame() {
+            if (isEngineThinking) return;
             game.reset();
+            moveCount = 0;
+            $history.empty();
+            $('#undoBtn').prop('disabled', true);
+            $('#resultsPanel').hide();
             board.start();
             updateStatus();
+            await createNewGame();
         }
-        const config = {
-            draggable: true,
-            position: 'start',
-            onDragStart: onDragStart,
-            onDrop: onDrop,
-            onSnapEnd: onSnapEnd,
-            pieceTheme: 'https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/img/chesspieces/wikipedia/{piece}.png'
-        };
-        board = Chessboard('board', config);
-        updateStatus();
-        $(window).resize(board.resize);
-    </script>
 
-        </body>
-    </html>
+        board = Chessboard('board', {
+            draggable:   true,
+            position:    'start',
+            pieceTheme:  'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png',
+            onDragStart: onDragStart,
+            onDrop:      onDrop,
+            onSnapEnd:   onSnapEnd
+        });
+
+        $(window).resize(board.resize);
+        resetGame();
+    </script>
+</body>
+</html>

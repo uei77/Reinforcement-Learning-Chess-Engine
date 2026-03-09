@@ -96,7 +96,7 @@ def train_batch(model, data, optimizer, criterion_policy, criterion_value, devic
     
     return total_loss.item(), loss_policy.item(), loss_value.item()
         
-def train_loop(model, optimizer, csv_file, epochs=10, batch_size=128, model_path="final_chess_dl_model.pt"):
+def train_loop(model, optimizer, csv_file, epochs=10, batch_size=128, model_path="final_chess_rl_model.pt"):
     device = next(model.parameters()).device
     use_amp = device.type == 'cuda'
     scaler = GradScaler(device.type) if use_amp else None

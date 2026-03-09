@@ -22,8 +22,10 @@ class MCTNode:
         best_move = None
         best_child = None
         
+        parent_visits = max(1, self.visit)
+        
         for move_uci, child in self.children.items():
-            ucb = cpuct * child.priority * (math.sqrt(self.visit) / (1 + child.visit))
+            ucb = cpuct * child.priority * (math.sqrt(parent_visits) / (1 + child.visit))
             final_score = child.calculate_value() + ucb
             
             if final_score > best_score:
@@ -32,6 +34,3 @@ class MCTNode:
                 best_child = child
                 
         return best_move, best_child
-            
-            
-        

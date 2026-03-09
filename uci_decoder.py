@@ -63,7 +63,7 @@ def get_syzygy_move_online(board: chess.Board) -> str:
     except Exception:
         return None
 
-def find_best_move(board: chess.Board, model: torch.nn.Module, device: torch.device) -> str:
+def find_best_move(board: chess.Board, model: torch.nn.Module, device: torch.device, num_simulations: int = 800) -> str:
     book_move = get_book_move(board)
     if book_move:
         return book_move
@@ -77,7 +77,7 @@ def find_best_move(board: chess.Board, model: torch.nn.Module, device: torch.dev
             board=board,
             model=model,
             device=device,
-            numofsimulation=400, 
+            numofsimulation=num_simulations,  
             is_Train=False, 
             move_count=len(board.move_stack)
         )
@@ -91,7 +91,7 @@ def find_best_move(board: chess.Board, model: torch.nn.Module, device: torch.dev
         return list(board.legal_moves)[0].uci()
 
 def uci_play():
-    model_path = "final_chess_dl_model.pt"
+    model_path = "final_chess_rl_model.pt"
     model, device = load_model(model_path)
     board = chess.Board()
     while True:

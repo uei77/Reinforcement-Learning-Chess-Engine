@@ -211,4 +211,6 @@ venv/
 __pycache__/
 *.pyc
 *.pt
+*.pgn
+*.csv
 >>>>>>> 5990ec0 (First Commit : Chess Engine)
