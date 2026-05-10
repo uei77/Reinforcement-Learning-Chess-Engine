@@ -12,4 +12,4 @@ Self-play evaluations and benchmarking were conducted against Stockfish 5 and 6.
 https://stockfishchess.org/
 Some problems may accur on Frontend.On later updates i will fix these problems.
 
-This is my first supervised learning chess engine project. While it's not quite at a professional level, this is the best I could do with the resources I had available for this project. This is a project to combine my field of study with a game I love. It was a project where I pushed my limits and learned a lot. Thanks for checking out my project!
+This is my first reinforcement learning chess engine project. While it's not quite at a professional level, this is the best I could do with the resources I had available for this project. This is a project to combine my field of study with a game I love. It was a project where I pushed my limits and learned a lot. Thanks for checking out my project!
